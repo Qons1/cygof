@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
@@ -97,6 +98,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (user == null) return;
     final updatedName = _nameController.text.trim();
     String updatedImageUrl = _profileImageController.text.trim();
+    final String contact = _contactController.text.trim();
 
     setState(() => _saving = true);
     try {
@@ -106,6 +108,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
           updatedImageUrl = url;
           _profileImageController.text = url;
         }
+      }
+
+      // Validate PH contact number: must be 11 digits and start with 09
+      final contactRe = RegExp(r'^09\d{9}$');
+      if (contact.isNotEmpty && !contactRe.hasMatch(contact)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Contact number must be 11 digits and start with 09.')),
+          );
+        }
+        setState(() => _saving = false);
+        return;
       }
 
       // Update Firebase Auth profile
@@ -145,6 +159,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'displayName': updatedName,
         'profileImageUrl': updatedImageUrl,
       };
+      if (contact.isNotEmpty) {
+        updates['contactNumber'] = contact;
+      }
       await FirebaseDatabase.instance.ref('users/' + user.uid).update(updates);
 
       if (!mounted) return;
@@ -197,15 +214,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
             const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Contact Number', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(_contactController.text.isEmpty ? 'N/A' : _contactController.text),
-                ],
+            TextField(
+              controller: _contactController,
+              keyboardType: TextInputType.phone,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(11),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Contact Number (11 digits, starts with 09)',
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),

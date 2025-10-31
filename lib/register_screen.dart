@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -27,6 +28,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> register() async {
     setState(() => loading = true);
     try {
+      // Validate PH contact number: must be 11 digits and start with 09
+      final contact = contactController.text.trim();
+      final contactRe = RegExp(r'^09\d{9}$');
+      if (!contactRe.hasMatch(contact)) {
+        setState(() => loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Contact number must be 11 digits and start with 09.')),
+          );
+        }
+        return;
+      }
       // Validate modern password rules: >=8, upper, lower, number, special
       final pwd = passwordController.text.trim();
       final re = RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$');
@@ -115,6 +128,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextField(
                 controller: contactController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
                 decoration: const InputDecoration(
                   labelText: "Contact Number",
                   border: OutlineInputBorder(),
