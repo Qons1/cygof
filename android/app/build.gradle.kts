@@ -34,10 +34,18 @@ android {
     }
 
     buildTypes {
-        release {
-            // Signing with the debug keys for now; set up key.properties later for production
-            signingConfig = signingConfigs.getByName("debug")
+        debug {
             isMinifyEnabled = false
+            isShrinkResources = false
+        release {
+            // Simple internal build; no shrinking
+            isMinifyEnabled = false
+            isShrinkResources = false
+            // If you later want shrinking in release:
+            // isMinifyEnabled = true
+            // isShrinkResources = false
+            // proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            }
         }
     }
 }
